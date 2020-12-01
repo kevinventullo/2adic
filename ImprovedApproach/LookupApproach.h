@@ -1,10 +1,6 @@
 #ifndef LOOKUPAPPROACH_H_INCLUDED
 #define LOOKUPAPPROACH_H_INCLUDED
 
-
-#include <iostream>
-
-
 // Private:
 
 // Some magic numbers you might come across:

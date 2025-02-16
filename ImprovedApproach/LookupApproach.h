@@ -31,6 +31,18 @@ uint64_t twoadic_exp_1024(uint64_t x) {
             + x2over2 + x + 1;
 }
 
+uint64_t twoadic_exp_terms(uint64_t x, uint64_t t) {
+    const uint64_t x2over2 = x*(x>>1);
+    if (t == 2) {
+        return 1 + x + x2over2;
+    }
+    const uint64_t x2over6 = x2over2*12297829382473034411ull;
+    if (t == 3) {
+        return 1 + x + x2over2 + x2over6*x;
+    }
+    return ((x2over2>>1)+x)*x2over6+x2over2+x+1;
+}
+
 // Input assumption: x%1024 == 1
 //
 // Computes the 2-adic logarithm of x via the sixth degree Taylor
@@ -79,6 +91,46 @@ uint64_t twoadic_exp(uint64_t x) {
 
     return twoadic_exp_1024(x)*rv;
 }
+
+// Input assumption: x%4 == 0
+//
+// Computes the 2-adic exponential of x to m digits
+uint64_t twoadic_exp_precision(uint64_t x, int m) {
+    uint64_t rv = 1;
+    // The Taylor series computes T terms. That means the T+1th term must have valuation greater than or equal to m.
+    // Which means T+1 * (l-1) >= m. Default is T = 6, l = 10 (works because 7th term of taylor series is fine).
+    int l;
+    if (m >= 33) {
+        l = 10;
+    } else if (m >= 16) {
+        l = 7;
+    } else if (m >= 8) {
+        l = 5;
+    } else {
+        l = 3;
+    }
+    // For T =4, l = 7, the 5th term of the taylor series has val 32.
+    // For T = 3, l = 5 , the 4rd term of the taylor series has val 16
+    // For T = 2, l = 3, the 3rd term of the taylor series has val 8, 4th term has val 8.
+
+    // Reduce to the case x%1024 == 0
+    for(int i = 2; i < l; ++i) {
+        if (x & (1 << i)) {
+            // Multiply rv by 2^i + 1, subtract off the log of 2^i + 1.
+            rv += (rv << i);
+            x -= logarray[i]; // log((2^i +1))
+        }
+    }
+    if (l == 10) {
+        return twoadic_exp_1024(x)*rv;
+    }
+    int t = l/2 + 1;
+    return twoadic_exp_terms(x, t)*rv;
+
+    
+}
+
+
 
 // Input assumption: a%2 == 1
 uint64_t adic_pow_odd(uint64_t a, uint64_t b) {

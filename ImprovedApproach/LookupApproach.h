@@ -98,20 +98,27 @@ uint64_t twoadic_exp(uint64_t x) {
 uint64_t twoadic_exp_precision(uint64_t x, int m) {
     uint64_t rv = 1;
     // The Taylor series computes T terms. That means the T+1th term must have valuation greater than or equal to m.
-    // Which means T+1 * (l-1) >= m. Default is T = 6, l = 10 (works because 7th term of taylor series is fine).
-    int l;
+    // Which means T+1 * (l-1)+1 >= m. Full precision is T = 6, l = 10 (works because 7th term of taylor series actually 
+    // has valuation 70-4 = 66 >= 64).
+    //
+    // For T =4, l = 7, the 5th term of the taylor series has val >= 32.
+    // For T = 3, l = 5 , the 4rd term of the taylor series has val >= 16
+    // For T = 2, l = 3, the 3rd term of the taylor series has val >= 8, 4th term has val >= 8.
+    // These choices are heuristic and could be optimized. 
+    int l, t;
     if (m >= 33) {
         l = 10;
     } else if (m >= 16) {
         l = 7;
+        t = 4;
     } else if (m >= 8) {
         l = 5;
+        t = 3;
     } else {
         l = 3;
+        t = 2;
     }
-    // For T =4, l = 7, the 5th term of the taylor series has val 32.
-    // For T = 3, l = 5 , the 4rd term of the taylor series has val 16
-    // For T = 2, l = 3, the 3rd term of the taylor series has val 8, 4th term has val 8.
+
 
     // Reduce to the case x%1024 == 0
     for(int i = 2; i < l; ++i) {
@@ -124,10 +131,7 @@ uint64_t twoadic_exp_precision(uint64_t x, int m) {
     if (l == 10) {
         return twoadic_exp_1024(x)*rv;
     }
-    int t = l/2 + 1;
     return twoadic_exp_terms(x, t)*rv;
-
-    
 }
 
 

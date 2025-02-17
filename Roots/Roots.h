@@ -45,6 +45,9 @@ static const uint64_t EulerEvenRoot(uint64_t n, uint64_t dop, uint64_t v, uint64
 
 // Compute kth root of n. 
 static const uint64_t twoAdicKthRoot(uint64_t n, uint64_t k) {
+    if (n==0) {
+        return 0;
+    }
     // Digits of precision; a kth root will never have more than this many bits
     uint64_t dop = 1+(63/k);
 
@@ -57,7 +60,7 @@ static const uint64_t twoAdicKthRoot(uint64_t n, uint64_t k) {
     uint64_t n_odd = n >> n_two_val;
 
     if (k_two_val == 0) {
-        // k is odd; implicitly handles n = 3 (mod 4). 
+        // k is odd; implicitly handles n_odd = 3 (mod 4). 
         // Note this could be further optimized to use dop, as the 
         // combined_pow function assumes all 64 bits of precision.  
         return combined_pow(n_odd, k_odd_inv) << sol_two_val;

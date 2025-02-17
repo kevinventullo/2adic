@@ -53,7 +53,7 @@ class TwoAdic:
             raise Exception('Only handles two-adic integers for now')
         if n is None:
             n = len(self.toBitString(x))
-        # Simple linear. Can replace w/ Newton-Raphsom to get log(n) time. 
+        # Simple linear. Can replace w/ Newton-Raphsom to get lg(n) time. 
         rv = x
         for i in range(1,n+1):
             if ((rv*x)%(2**i) != 1):

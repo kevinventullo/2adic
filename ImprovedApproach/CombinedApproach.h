@@ -3,6 +3,7 @@
 
 #include "LookupApproach.h"
 
+// Compute a^b (mod 2^64)
 uint64_t combined_pow(uint64_t a, uint64_t b) {
     uint64_t rv = 1;
     for(size_t i = 0; i < 8; ++i) {

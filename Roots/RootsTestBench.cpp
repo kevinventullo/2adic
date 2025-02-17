@@ -1,7 +1,8 @@
 #include <chrono>
 #include <iostream>
 #include <random>
-#include "Newton.h"
+#include <algorithm>
+#include "Roots.h"
 
 
 
@@ -13,7 +14,7 @@ bool CorrectnessTest(int r) {
         uint64_t pow = trad_pow(i, r);
         root_pairs.emplace_back(pow, i);
     }
-    for(uint64_t i = (1ull << 64/r)-1; i > (1ull << 64/r)-1000000; i--){
+    for(int64_t i = (1ull << 64/r)-1; i > std::max((1ull << 64/r)-1000000, 0ull); i--){
 
         uint64_t pow = trad_pow(i, r);
         root_pairs.emplace_back(pow, i);
@@ -85,10 +86,10 @@ void Benchmark(int k) {
 
 
 int main() {
-    for (int k = 2; k < 13; ++k) {
+    for (int k = 2; k < 19; ++k) {
         if (!CorrectnessTest(k)) return -1;
     }
-    for (int k = 2; k < 13; ++k) {
+    for (int k = 2; k < 19; ++k) {
         std::cout << "Benchmark k = " << k << ":" << std::endl;
         Benchmark(k);
     }

@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <bit>
+#include <algorithm>
 #include "../ImprovedApproach/LookupApproach.h"
 #include "../ImprovedApproach/CombinedApproach.h"
 
@@ -24,62 +25,30 @@ static inline uint64_t mod_inverse_h(uint64_t a)
 // Compute the k = L*2^vth root of n.
 // Assume v > 0, thus n = 1 (mod 2^{v+2})
 // For n = 64, answer should have no more than 1+64/k digits.
-// 
-static const uint64_t twoPowerRoot(uint64_t n, uint64_t k, uint64_t v, uint64_t L_inv) {
-    // bool debug = false;
-    // if (n == 81 && k == 4){
-    //     debug = true;
-    //     // 81 = 1010001 = 1 + 5*2^4
-    //     // v = 2
-    // }
-    
-    uint64_t digits_of_precision = 1+(63/k);
-
+static const uint64_t EulerEvenRoot(uint64_t n, uint64_t dop, uint64_t v, uint64_t L_inv) {
     uint64_t x_two_val = std::countr_zero(n >> v); // (Really (n-1) >> v)
-    // x = 1 + 4 * 5*2^2. x_two_val = 2.
-    // 
-
-    int g = digits_of_precision+2- 2*x_two_val - v;
-    g = std::max(g, 0);
-    for(int i = 0; i < g; ++i) {
+    
+    // Each square gains a net one bit of accuracy. 
+    int addl_squares = dop+2- 2*x_two_val - v;
+    addl_squares = std::max(addl_squares, 0);
+    
+    // This could perhaps be done more efficiently by using the adic_pow function 
+    // modified to only compute the exact bits of precision needed.
+    for(int i = 0; i < addl_squares; ++i) {
             n = n*n;
     }
-    
 
-    uint64_t x = L_inv * (n>>(v+g)); // (Really (n-1) >> v+g)
+    uint64_t x = L_inv * (n>>(v+addl_squares)); // (Think (n-1) >> v+addl_powers)
     // Now calculate exp(x) to dop digits.
-    auto rv = twoadic_exp_precision(x, digits_of_precision+1);
-
-    // if (debug) {
-    //     std::string s = "";
-    //     auto tmp = rv;
-    //     while (tmp!=0) {
-    //         if(tmp %2 == 0) {
-    //             s = "0" + s;
-    //         } else {
-    //             s = "1" + s;
-    //         }
-    //         tmp/=2;
-    //     }
-    //     std::cout << s << std::endl;
-    // }
-
-    auto sign_check = 1ull << (digits_of_precision);
- 
-    if (rv & sign_check) {
-        rv = -rv;
-    }
-
-    return rv & (sign_check-1);
-
-
+    return twoadic_exp_precision(x, dop+1);
 }
 
 // Compute kth root of n. 
 static const uint64_t twoAdicKthRoot(uint64_t n, uint64_t k) {
+    // Digits of precision; a kth root will never have more than this many bits
+    uint64_t dop = 1+(63/k);
 
     uint64_t k_two_val = std::countr_zero(k);
-
     uint64_t k_odd_inv = mod_inverse_h(k >> k_two_val);
 
     uint64_t n_two_val = std::countr_zero(n);
@@ -89,22 +58,24 @@ static const uint64_t twoAdicKthRoot(uint64_t n, uint64_t k) {
 
     if (k_two_val == 0) {
         // k is odd; implicitly handles n = 3 (mod 4). 
+        // Note this could be further optimized to use dop, as the 
+        // combined_pow function assumes all 64 bits of precision.  
         return combined_pow(n_odd, k_odd_inv) << sol_two_val;
-    } else {
-        
-        return twoPowerRoot(n_odd, k, k_two_val, k_odd_inv) << sol_two_val;
     }
 
+    // The commented out function does the more straightforward "Root Equation"
+    // approach of computing the log, dividing, then computing the exp. But it 
+    // does not exploit information about digits of precision, which partially 
+    // explains the slower running time compared to the EulerEvenRoot function. 
+    //
+    // auto rv = twoadic_exp(k_odd_inv*(twoadic_log(n_odd)>>k_two_val));
+    auto rv = EulerEvenRoot(n_odd, dop, k_two_val, k_odd_inv);
     
-    uint64_t final_mod = 1ull << ((64/k)+1);
-
-    auto rv = (twoadic_exp(k_odd_inv*(twoadic_log(n_odd)>>k_two_val)));
-    
-    if (rv & final_mod) {
+    uint64_t sign_check = 1ull << dop;
+    if (rv & sign_check) {
         rv = -rv;
     }
-    return(rv & (final_mod-1))<<sol_two_val;
-
+    return(rv & (sign_check-1))<<sol_two_val;
 }
 
 
